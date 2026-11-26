@@ -115,9 +115,7 @@ DRAFT Document Version: 3.3 Date: November 2026 Author: Rodion RODIONOV Organiza
   - [11.2 Audit Trail](#112-audit-trail)
   - [11.3 Compliance Policies](#113-compliance-policies)
 - [12. Roles & Responsibilities](#12-roles-responsibilities)
-- [13. Roadmap & Next Steps](#13-roadmap-next-steps)
-  - [Immediate Next Steps](#immediate-next-steps)
-- [14. Appendix](#14-appendix)
+- [13. Appendix](#13-appendix)
   - [A. Glossary](#a-glossary)
   - [B. Reference Architecture Diagram](#b-reference-architecture-diagram)
   - [C. Pipeline YAML Template (Azure DevOps)](#c-pipeline-yaml-template-azure-devops)
@@ -639,21 +637,7 @@ SIEM Monitoring: All deployment and security events forwarded to SIEM. Correlati
 | Release Manager / CAB | Approve PROD deployments in Cloud ALM, coordinate release schedules. | Cloud ALM |
 | Basis / Platform Admin | Manage BTP subaccounts, S/4HANA system administration, CIS configuration, CTMS nodes, execute CTS imports. | BTP Cockpit, CIS/IAS, CTMS, S/4HANA STMS |
 
-# 13. Roadmap & Next Steps
-| Phase | Timeline | Activities |
-| --- | --- | --- |
-| Phase 1: Foundation | Weeks 1–4 | • Set up BTP subaccount topology (DEV, QAS, PROD, Platform)• Configure CIS (IAS federation with corporate IdP, RBAC)• Set up CTMS transport nodes and routes• Subscribe Cloud ALM and configure deployment management• Create Azure DevOps project and initial Git repositories |
-| Phase 2: CI/CD & Security | Weeks 5–8 | • Build CI/CD pipeline templates (SAP CID) for Fiori, Mobile, Integration• Integrate SAST tool (SonarQube/SonarCloud) into pipelines• Integrate SCA tool (npm audit + Snyk/Mend) into pipelines• Configure pre-commit hooks for secrets detection• Define and enforce branch policies in Azure DevOps |
-| Phase 3: Monitoring & Alerting | Weeks 9–12 | • Configure SAP Alert Notification Service subscriptions and actions• Set up Automation Pilot commands for deployment tracking and health checks• Integrate Cloud ALM operations monitoring• Configure failure notification channels (email, Teams/Slack) |
-| Phase 4: Optimization | Weeks 13–16 | • Implement auto-remediation (rollback) via Automation Pilot• Build compliance reporting dashboards• Onboard all remaining applications to the DevSecOps pipeline• Conduct security review and penetration testing• Document operational runbooks |
-
-## Immediate Next Steps
-Review and approve this strategy document with all stakeholders.
-Confirm tool selection for SAST and SCA scanning.
-Provision BTP subaccounts and platform services (Phase 1).
-Assign roles and onboard team members to Azure DevOps and Cloud ALM.
-Begin CI/CD pipeline development for the first pilot application (e.g., a Fiori app).
-# 14. Appendix
+# 13. Appendix
 ## A. Glossary
 | Term | Definition |
 | --- | --- |
