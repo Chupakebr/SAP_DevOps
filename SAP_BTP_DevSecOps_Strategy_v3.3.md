@@ -10,19 +10,12 @@
 
 | Field | Value |
 | --- | --- |
-| Document Version | 3.3 |
+| Document Version | 4.0 |
 | Date | November 2026 |
 | Author | Rodion RODIONOV |
 | Organization | SAP SE – Cross-Solution Delivery, Integrated Toolchain |
 
 # Document Control
-## Revision History
-| Version | Date | Author | Changes |
-| --- | --- | --- | --- |
-| 0.1 | October 2026 | R. Rodionov | Initial draft |
-| 1.0 | November 2026 | Harshit Madania | Stakeholder review comments |
-| 3.2 | November 2026 | R. Rodionov | Added: BAS→S/4HANA PCE deployment, deployment roles matrix, SIEM integration, SSAM MDK clarification |
-
 ## Reviewers & Approvers
 | Role | Name | Status | Date |
 | --- | --- | --- | --- |
@@ -43,7 +36,6 @@
 
 - [DevSecOps Strategy](#devsecops-strategy)
 - [Document Control](#document-control)
-  - [Revision History](#revision-history)
   - [Reviewers & Approvers](#reviewers-approvers)
   - [Distribution](#distribution)
 - [1. Executive Summary](#1-executive-summary)
@@ -113,9 +105,6 @@
 - [13. Appendix](#13-appendix)
   - [A. Glossary](#a-glossary)
   - [B. Reference Architecture Diagram](#b-reference-architecture-diagram)
-  - [C. Pipeline YAML Template (SAP BTP CI/CD)](#c-pipeline-yaml-template-sap-btp-cicd)
-  - [D. CTMS Configuration Reference](#d-ctms-configuration-reference)
-  - [E. SIEM Configuration Reference](#e-siem-configuration-reference)
 # 1. Executive Summary
 This document defines the DevSecOps strategy for managing the full lifecycle of the following SAP Business Technology Platform (BTP) applications for QatarEnergy:
 - **SSAM (Mobile)** – built with SAP Mobile Development Kit (MDK) on SAP Mobile Services
@@ -662,9 +651,3 @@ The combined toolchain provides a complete audit trail:
 
 ![Reference Architecture Detail](images/reference-architecture-2.png)
 
-## C. Pipeline YAML Template (SAP BTP CI/CD)
-[Insert reference SAP BTP CI/CD service pipeline configuration for the Cloud Foundry Environment (Fiori/CAP MTAR build) and SAP Fiori for ABAP Platform scenarios, including SAST and SCA stages.]
-## D. CTMS Configuration Reference
-[Insert CTMS node and route configuration details specific to the customer landscape.]
-## E. SIEM Configuration Reference
-[Insert SIEM correlation rules, log format specifications, and dashboard templates.]

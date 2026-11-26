@@ -10,8 +10,6 @@ DevSecOps strategy document for SAP Business Technology Platform applications, c
 
 | Field | Value |
 |---|---|
-| Version | 3.3 |
+| Version | 4.0 |
 | Author | Rodion RODIONOV |
 | Organization | SAP SE – Cross-Solution Delivery, Integrated Toolchain |
-| Classification | SAP Internal |
-| Status | DRAFT |
