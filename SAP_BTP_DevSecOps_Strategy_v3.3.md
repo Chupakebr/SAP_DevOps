@@ -1,7 +1,12 @@
 # DevSecOps Strategy
+
+![SAP Logo](images/cover-logo.png)
+
+![Cover Banner](images/cover-banner.png)
+
 SAP Business Technology Platform Applications
 Azure DevOps & SAP Cloud ALM Integration
-DRAFTDocument Version: 3.3Date: November 2026Author: Rodion RODIONOVOrganization: SAP SE – Cross-Solution Delivery, Integrated ToolchainClassification: SAP Internal
+DRAFT Document Version: 3.3 Date: November 2026 Author: Rodion RODIONOV Organization: SAP SE – Cross-Solution Delivery, Integrated Toolchain Classification: SAP Internal
 # Document Control
 ## Revision History
 | Version | Date | Author | Changes |
@@ -163,6 +168,11 @@ Alert proactively – leverage Alert Notification Service for real-time incident
 # 3. BTP Landscape Architecture
 ## 3.1 Subaccount Topology
 The BTP landscape follows a three-tier subaccount model aligned with the standard SAP transport landscape. An additional platform services subaccount hosts shared DevSecOps tooling.
+
+![BTP Subaccount Topology](images/btp-subaccount-topology.png)
+
+![BTP Landscape Diagram](images/btp-landscape-diagram.png)
+
 | Subaccount | Purpose | Key Services |
 | --- | --- | --- |
 | DEV | Development & unit testing. Developers deploy freely. CTMS source node. | SAP Business Application Studio (BAS), application runtimes, service instances |
@@ -316,6 +326,9 @@ Review of credentials and destinations used in automations
 
 Admin (Work Zone, DEV) → Configure site / content → CTMS export→ Cloud ALM approval → CTMS transport to QAS → CTMS transport to PROD
 ### 5.2.3 SAP Datasphere / Data Cloud
+
+![SAP Datasphere Transport Flow](images/datasphere-transport.png)
+
 | Aspect | Details |
 | --- | --- |
 | Development | SAP Datasphere modeler (spaces, views, data flows, analytic models) |
@@ -669,6 +682,10 @@ Begin CI/CD pipeline development for the first pilot application (e.g., a Fiori 
 | SSAM | SAP Mobile Services application (mobile development using MDK) |
 
 ## B. Reference Architecture Diagram
+
+![Reference Architecture](images/reference-architecture.png)
+
+![Reference Architecture Detail](images/reference-architecture-2.png)
 
 ## C. Pipeline YAML Template (Azure DevOps)
 [Insert reference Azure DevOps YAML pipeline template for SAP Fiori MTAR build, including SAST and SCA stages.]
