@@ -26,88 +26,98 @@ DRAFTDocument Version: 3.3Date: November 2026Author: Rodion RODIONOVOrganization
 | SAP Security & Compliance | Full |
 | Executive Sponsors | Summary only |
 
-Table of Contents
-DevSecOps Strategy1
-Document Control2
-Revision History2
-Reviewers & Approvers2
-Distribution3
-1. Executive Summary7
-2. Scope & Objectives9
-2.1 In Scope9
-2.2 Out of Scope9
-2.3 Objectives10
-3. BTP Landscape Architecture11
-3.1 Subaccount Topology11
-3.2 Core Platform Services11
-SAP Cloud Identity Services (CIS)12
-SAP Cloud Transport Management Service (CTMS)12
-SAP Cloud ALM12
-4. Source Code Management – Git in Azure DevOps13
-4.1 Repository Strategy13
-4.2 Branching Model13
-4.3 Code Review & Pull Request Policies14
-5. Application Pipeline Strategy15
-5.1 Git-Supported Applications15
-5.1.1 SSAM – Mobile Development (SAP Mobile Services / MDK)15
-5.1.2 SAP Fiori Applications18
-5.1.3 SAP Integration Services (SAP Integration Suite)18
-5.2 Non-Git Applications21
-5.2.1 SAP Build Process Automation (BPA)21
-5.2.2 SAP Build Work Zone21
-5.2.3 SAP Datasphere / Data Cloud22
-5.3 S/4HANA PCE Extensions (from BAS)23
-5.3.1 Architecture Overview23
-5.3.2 Development Scenarios24
-5.3.3 gCTS Integration (Git-enabled CTS)24
-5.3.4 Fiori Deployment to S/4HANA BSP Repository25
-5.3.5 Prerequisites for BAS-to-S/4HANA Connectivity25
-6. CI/CD Pipeline Design28
-6.1 Pipeline Architecture28
-6.2 Build & Quality Gates28
-6.3 Security Scanning in Pipeline29
-7. Deployment Strategy30
-7.1 SAP Cloud Transport Management Service (CTMS)30
-Transport Nodes30
-7.2 SAP Cloud ALM Integration30
-Cloud ALM Deployment Logging30
-7.3 Transport Routes31
-7.4 Deployment Roles & Authorization Matrix32
-7.4.1 BTP Application Deployments (via CTMS + Cloud ALM)32
-7.4.2 S/4HANA PCE Deployments (via CTS / gCTS + Cloud ALM)33
-7.4.3 Segregation of Duties Summary34
-8. Security Strategy36
-8.1 SAP Cloud Identity Services (CIS)36
-8.2 Secrets & Credential Management36
-8.3 Static Application Security Testing (SAST)37
-8.4 Dependency & Vulnerability Scanning (SCA)37
-9. Monitoring, Logging & Alerting38
-9.1 SAP Cloud ALM – Deployment Logging38
-Logging Matrix38
-9.2 CI/CD Build Failure Logging38
-9.3 SAP Alert Notification Service (ANS) for BTP39
-Alert Configuration39
-9.4 SIEM Integration40
-9.4.1 Log Sources & SIEM Feeds40
-9.4.2 SIEM Correlation Rules41
-9.4.3 Supported SIEM Platforms42
-10. Automation & Orchestration44
-10.1 SAP Automation Pilot44
-Key Use Cases44
-10.2 Deployment Tracking & Self-Healing45
-11. Governance & Compliance46
-11.1 Change Management Governance46
-11.2 Audit Trail46
-11.3 Compliance Policies47
-12. Roles & Responsibilities48
-13. Roadmap & Next Steps49
-Immediate Next Steps50
-14. Appendix51
-A. Glossary51
-B. Reference Architecture Diagram52
-C. Pipeline YAML Template (Azure DevOps)53
-D. CTMS Configuration Reference53
-E. SIEM Configuration Reference53
+## Table of Contents
+
+- [DevSecOps Strategy](#devsecops-strategy)
+- [Document Control](#document-control)
+  - [Revision History](#revision-history)
+  - [Reviewers & Approvers](#reviewers-approvers)
+  - [Distribution](#distribution)
+- [1. Executive Summary](#1-executive-summary)
+- [2. Scope & Objectives](#2-scope-objectives)
+  - [2.1 In Scope](#21-in-scope)
+  - [2.2 Out of Scope](#22-out-of-scope)
+  - [2.3 Objectives](#23-objectives)
+- [3. BTP Landscape Architecture](#3-btp-landscape-architecture)
+  - [3.1 Subaccount Topology](#31-subaccount-topology)
+  - [3.2 Core Platform Services](#32-core-platform-services)
+    - [SAP Cloud Identity Services (CIS)](#sap-cloud-identity-services-cis)
+    - [SAP Cloud Transport Management Service (CTMS)](#sap-cloud-transport-management-service-ctms)
+    - [SAP Cloud ALM](#sap-cloud-alm)
+- [4. Source Code Management – Git in Azure DevOps](#4-source-code-management-git-in-azure-devops)
+  - [4.1 Repository Strategy](#41-repository-strategy)
+  - [4.2 Branching Model](#42-branching-model)
+  - [4.3 Code Review & Pull Request Policies](#43-code-review-pull-request-policies)
+- [5. Application Pipeline Strategy](#5-application-pipeline-strategy)
+  - [5.1 Git-Supported Applications](#51-git-supported-applications)
+    - [5.1.1 SSAM – Mobile Development (SAP Mobile Services / MDK)](#511-ssam-mobile-development-sap-mobile-services-mdk)
+      - [Transport Mechanism: SAP Content Agent → cTMS](#transport-mechanism-sap-content-agent-ctms)
+      - [Prerequisites for MDK → cTMS Integration](#prerequisites-for-mdk-ctms-integration)
+      - [Pipeline Flow](#pipeline-flow)
+    - [5.1.2 SAP Fiori Applications](#512-sap-fiori-applications)
+    - [5.1.3 SAP Integration Services (SAP Integration Suite)](#513-sap-integration-services-sap-integration-suite)
+      - [Artifact-Level Transport Support Matrix](#artifact-level-transport-support-matrix)
+  - [5.2 Non-Git Applications](#52-non-git-applications)
+    - [5.2.1 SAP Build Process Automation (BPA)](#521-sap-build-process-automation-bpa)
+    - [5.2.2 SAP Build Work Zone](#522-sap-build-work-zone)
+    - [5.2.3 SAP Datasphere / Data Cloud](#523-sap-datasphere-data-cloud)
+  - [5.3 S/4HANA PCE Extensions (from BAS)](#53-s4hana-pce-extensions-from-bas)
+    - [5.3.1 Architecture Overview](#531-architecture-overview)
+    - [5.3.2 Development Scenarios](#532-development-scenarios)
+    - [5.3.3 gCTS Integration (Git-enabled CTS) optional](#533-gcts-integration-git-enabled-cts-optional)
+    - [5.3.4 Fiori Deployment to S/4HANA BSP Repository (legacy)](#534-fiori-deployment-to-s4hana-bsp-repository-legacy)
+    - [5.3.5 Prerequisites for BAS-to-S/4HANA Connectivity](#535-prerequisites-for-bas-to-s4hana-connectivity)
+    - [5.3.6 ABAP Code Quality – ATC Checks on Transport Release](#536-abap-code-quality-atc-checks-on-transport-release)
+      - [ATC Check Categories](#atc-check-categories)
+      - [ABAP Unit Tests – Execution via ATC](#abap-unit-tests-execution-via-atc)
+      - [Transport Release Flow with ATC](#transport-release-flow-with-atc)
+      - [ATC Configuration Prerequisites](#atc-configuration-prerequisites)
+- [6. CI/CD Pipeline Design](#6-cicd-pipeline-design)
+  - [6.1 Pipeline Architecture](#61-pipeline-architecture)
+  - [6.2 Build & Quality Gates](#62-build-quality-gates)
+  - [6.3 Security Scanning in Pipeline](#63-security-scanning-in-pipeline)
+- [7. Deployment Strategy](#7-deployment-strategy)
+  - [7.1 SAP Cloud Transport Management Service (CTMS)](#71-sap-cloud-transport-management-service-ctms)
+    - [Transport Nodes](#transport-nodes)
+  - [7.2 SAP Cloud ALM Integration](#72-sap-cloud-alm-integration)
+    - [Cloud ALM Deployment Logging](#cloud-alm-deployment-logging)
+  - [7.3 Transport Routes](#73-transport-routes)
+  - [7.4 Deployment Roles & Authorization Matrix](#74-deployment-roles-authorization-matrix)
+    - [7.4.1 BTP Application Deployments (via CTMS + Cloud ALM)](#741-btp-application-deployments-via-ctms-cloud-alm)
+    - [7.4.2 S/4HANA PCE Deployments (via CTS / gCTS + Cloud ALM)](#742-s4hana-pce-deployments-via-cts-gcts-cloud-alm)
+    - [7.4.3 Segregation of Duties Summary](#743-segregation-of-duties-summary)
+- [8. Security Strategy](#8-security-strategy)
+  - [8.1 SAP Cloud Identity Services (CIS)](#81-sap-cloud-identity-services-cis)
+  - [8.2 Secrets & Credential Management](#82-secrets-credential-management)
+  - [8.3 Static Application Security Testing (SAST)](#83-static-application-security-testing-sast)
+  - [8.4 Dependency & Vulnerability Scanning (SCA)](#84-dependency-vulnerability-scanning-sca)
+- [9. Monitoring, Logging & Alerting](#9-monitoring-logging-alerting)
+  - [9.1 SAP Cloud ALM – Deployment Logging](#91-sap-cloud-alm-deployment-logging)
+    - [Logging Matrix](#logging-matrix)
+  - [9.2 CI/CD Build Failure Logging](#92-cicd-build-failure-logging)
+  - [9.3 SAP Alert Notification Service (ANS) for BTP](#93-sap-alert-notification-service-ans-for-btp)
+    - [Alert Configuration](#alert-configuration)
+  - [9.4 SIEM Integration](#94-siem-integration)
+    - [9.4.1 Log Sources & SIEM Feeds](#941-log-sources-siem-feeds)
+    - [9.4.2 SIEM Correlation Rules](#942-siem-correlation-rules)
+    - [9.4.3 Supported SIEM Platforms](#943-supported-siem-platforms)
+- [10. Automation & Orchestration](#10-automation-orchestration)
+  - [10.1 SAP Automation Pilot](#101-sap-automation-pilot)
+    - [Key Use Cases](#key-use-cases)
+  - [10.2 Deployment Tracking & Self-Healing](#102-deployment-tracking-self-healing)
+- [11. Governance & Compliance](#11-governance-compliance)
+  - [11.1 Change Management Governance](#111-change-management-governance)
+  - [11.2 Audit Trail](#112-audit-trail)
+  - [11.3 Compliance Policies](#113-compliance-policies)
+- [12. Roles & Responsibilities](#12-roles-responsibilities)
+- [13. Roadmap & Next Steps](#13-roadmap-next-steps)
+  - [Immediate Next Steps](#immediate-next-steps)
+- [14. Appendix](#14-appendix)
+  - [A. Glossary](#a-glossary)
+  - [B. Reference Architecture Diagram](#b-reference-architecture-diagram)
+  - [C. Pipeline YAML Template (Azure DevOps)](#c-pipeline-yaml-template-azure-devops)
+  - [D. CTMS Configuration Reference](#d-ctms-configuration-reference)
+  - [E. SIEM Configuration Reference](#e-siem-configuration-reference)
 
 # 1. Executive Summary
 This document defines the DevSecOps strategy for managing the full lifecycle of SAP Business Technology Platform (BTP) applications. It addresses source code management, CI/CD pipelines, deployment orchestration, security, monitoring, and automation across two distinct application categories:
