@@ -4,9 +4,17 @@
 
 ![Cover Banner](images/cover-banner.png)
 
-SAP Business Technology Platform Applications
-Azure DevOps & SAP Cloud ALM Integration
-Document Version: 3.3 Date: November 2026 Author: Rodion RODIONOV Organization: SAP SE – Cross-Solution Delivery, Integrated Toolchain
+**SAP Business Technology Platform Applications**
+
+**Azure DevOps & SAP Cloud ALM Integration**
+
+| Field | Value |
+| --- | --- |
+| Document Version | 3.3 |
+| Date | November 2026 |
+| Author | Rodion RODIONOV |
+| Organization | SAP SE – Cross-Solution Delivery, Integrated Toolchain |
+
 # Document Control
 ## Revision History
 | Version | Date | Author | Changes |
@@ -142,17 +150,20 @@ Key Principle: Security is embedded at every stage – from code commit (pre-com
 
 ## 2.2 Out of Scope
 
-SAP S/4HANA (ABAP part) on-premise or private cloud change management (ChaRM/CTS+)
-Non-SAP application pipelines
-Azur DevOps pipelines
-Infrastructure-as-Code for BTP subaccount provisioning (unless Automation Pilot is extended)
+- SAP S/4HANA (ABAP part) on-premise or private cloud change management (ChaRM/CTS+)
+- Non-SAP application pipelines
+- Azure DevOps Pipelines (CI/CD is handled exclusively by the SAP BTP CI/CD service)
+- Infrastructure-as-Code for BTP subaccount provisioning (unless Automation Pilot is extended)
+
 ## 2.3 Objectives
-Standardize the development-to-production lifecycle for all SAP BTP applications.
-Shift security left – embed security checks into every CI/CD pipeline stage.
-Ensure traceability – every deployment to QAS/PROD must be traceable to a Cloud ALM feature/change, a Git commit (where applicable), and an approval workflow.
-Automate repetitive deployment and monitoring tasks via Automation Pilot.
-Centralize logging – all deployment activities and CI/CD outcomes logged in Cloud ALM.
-Alert proactively – leverage Alert Notification Service for real-time incident detection.
+
+- Standardize the development-to-production lifecycle for all SAP BTP applications.
+- Shift security left – embed security checks into every CI/CD pipeline stage.
+- Ensure traceability – every deployment to QAS/PROD must be traceable to a Cloud ALM feature/change, a Git commit (where applicable), and an approval workflow.
+- Automate repetitive deployment and monitoring tasks via Automation Pilot.
+- Centralize logging – all deployment activities and CI/CD outcomes logged in Cloud ALM.
+- Alert proactively – leverage Alert Notification Service for real-time incident detection.
+
 # 3. BTP Landscape Architecture
 ## 3.1 Subaccount Topology
 The BTP landscape follows a three-tier subaccount model aligned with the standard SAP transport landscape. An additional platform services subaccount hosts shared DevSecOps tooling.
@@ -166,23 +177,34 @@ The BTP landscape follows a three-tier subaccount model aligned with the standar
 | PROD | Production. Deployments only via approved CTMS transport from QAS. | Application runtimes, service instances (production-grade sizing) |
 | Platform / DevOps | Shared DevSecOps services. Not application-specific. | CTMS, Cloud ALM (if BTP-based), CI/CD service, Alert Notification, Automation Pilot, CIS tenant |
 
-BTP Global Account  ├─ Subaccount: DEV          (development, BAS, runtimes)  ├─ Subaccount: QAS          (quality, testing)  ├─ Subaccount: PROD         (production)  └─ Subaccount: Platform     (CTMS, CIS, ANS, Automation Pilot)
+```
+BTP Global Account
+  ├─ Subaccount: DEV          (development, BAS, runtimes)
+  ├─ Subaccount: QAS          (quality, testing)
+  ├─ Subaccount: PROD         (production)
+  └─ Subaccount: Platform     (CTMS, CIS, ANS, Automation Pilot)
+
 Cloud ALM Global Account
+```
 
 ## 3.2 Core Platform Services
 ### SAP Cloud Identity Services (CIS)
 CIS provides the identity layer for the entire BTP landscape:
-Identity Authentication (IAS) – SAML/OIDC-based SSO for all BTP applications and Azure DevOps integration.
-Identity Provisioning (IPS) – automated user and group provisioning across subaccounts.
-Identity Directory – central user store for BTP, federated with corporate IdP (e.g., Azure AD / Entra ID).
+
+- Identity Authentication (IAS) – SAML/OIDC-based SSO for all BTP applications and Azure DevOps integration.
+- Identity Provisioning (IPS) – automated user and group provisioning across subaccounts.
+- Identity Directory – central user store for BTP, federated with corporate IdP (e.g., Azure AD / Entra ID).
+
 ### SAP Cloud Transport Management Service (CTMS)
 CTMS orchestrates the movement of application content (MTAR files, BPA projects, Work Zone content, Data Cloud artifacts) across the three-tier landscape. Transport nodes map to subaccounts; transport routes enforce the DEV → QAS → PROD flow.
 ### SAP Cloud ALM
 Cloud ALM serves as the central governance and operations hub:
-Features / Change Management – tracks requirements and changes linked to deployments.
-Deployment Management – approves and triggers CTMS transports, logs outcomes.
-Operations – health monitoring, real user monitoring, integration monitoring.
-Design Deion: Cloud ALM is subscribed in the Platform subaccount (or as a SaaS subscription at global-account level) to maintain independence from any single application subaccount. CTMS and CIS are similarly centralized.
+
+- Features / Change Management – tracks requirements and changes linked to deployments.
+- Deployment Management – approves and triggers CTMS transports, logs outcomes.
+- Operations – health monitoring, real user monitoring, integration monitoring.
+
+Design Decision: Cloud ALM is subscribed in the Platform subaccount (or as a SaaS subscription at global-account level) to maintain independence from any single application subaccount. CTMS and CIS are similarly centralized.
 # 4. Source Code Management – Git in Azure DevOps
 ## 4.1 Repository Strategy
 All Git-supported applications use Azure DevOps Git as the central source code management platform. Repository naming follows a consistent convention:
@@ -200,15 +222,18 @@ A trunk-based development model with short-lived feature branches is recommended
 | hotfix/* | Emergency production fixes. Created from main. | Short-lived (hours) | PR required, expedited review |
 | release/* | Optional: stabilization branch before QAS promotion. | Short-lived (sprint) | PR required, full review |
 
-feature/ABC-123  →  Pull Request  →  main  →  CI/CD Build  →  MTAR  →  CTMS (DEV)  →  Cloud ALM approval  →  CTMS (QAS)  →  CTMS (PROD)
+```
+feature/ABC-123 → Pull Request → main → CI/CD Build → MTAR → CTMS (DEV) → Cloud ALM approval → CTMS (QAS) → CTMS (PROD)
+```
 ## 4.3 Code Review & Pull Request Policies
 Azure DevOps branch policies enforce the following on the main branch:
-Minimum reviewers: At least 1 reviewer must approve (2 recommended for production-critical apps).
-Build validation: The CI pipeline must pass (build + unit tests + SAST scan) before merge.
-Work item linking: Every PR must be linked to an Azure DevOps work item (mapped to a Cloud ALM feature).
-Comment resolution: All review comments must be resolved before merge.
-No direct pushes: All changes to main must go through a PR.
-Security Gate: PRs that fail the SAST scan or introduce critical/high-severity vulnerabilities in dependency scanning are automatically blocked from merging.
+
+- **Minimum reviewers:** At least 1 reviewer must approve (2 recommended for production-critical apps).
+- **Build validation:** The CI pipeline must pass (build + unit tests + SAST scan) before merge.
+- **Work item linking:** Every PR must be linked to an Azure DevOps work item (mapped to a Cloud ALM feature).
+- **Comment resolution:** All review comments must be resolved before merge.
+- **No direct pushes:** All changes to main must go through a PR.
+- **Security Gate:** PRs that fail the SAST scan or introduce critical/high-severity vulnerabilities in dependency scanning are automatically blocked from merging.
 # 5. Application Pipeline Strategy
 ## 5.1 Git-Supported Applications
 These applications follow a unified pipeline pattern: developers work in SAP Business Application Studio (BAS), commit to Azure DevOps Git, and SAP BTP CI/CD service pipelines produce deployment artifacts that are uploaded to CTMS for transport through the landscape.
@@ -329,7 +354,9 @@ SAP Build Work Zone does not use Git-based source control. Configuration is mana
 | Transport Mechanism | CTMS (site content transport) |
 | Deployment Path | Work Zone (DEV) → CTMS → Cloud ALM approval → QAS → PROD |
 
-Admin (Work Zone, DEV) → Configure site / content → CTMS export→ Cloud ALM approval → CTMS transport to QAS → CTMS transport to PROD
+```
+Admin (Work Zone, DEV) → Configure site / content → CTMS export → Cloud ALM approval → CTMS transport to QAS → CTMS transport to PROD
+```
 
 
 # 6. CI/CD Pipeline Design
@@ -358,9 +385,11 @@ Every pipeline (regardless of platform) must include these stages:
 
 ## 6.3 Security Scanning in Pipeline
 Security scanning is a mandatory, non-skippable pipeline stage. See Section 8 for the detailed security strategy. In summary:
-SAST – SonarQube (or SonarCloud) integrated as a SAP BTP CI/CD pipeline stage. Results posted to Cloud ALM and the development team.
-SCA / Dependency Scanning – npm audit, Mend (formerly WhiteSource), or Snyk integrated as a CI/CD pipeline stage after dependency installation.
-Secrets Detection – Pre-commit hooks (e.g., detect-secrets) on developer machines to prevent accidental credential commits to Azure DevOps Git.
+
+- **SAST** – SonarQube (or SonarCloud) integrated as a SAP BTP CI/CD pipeline stage. Results posted to Cloud ALM and the development team.
+- **SCA / Dependency Scanning** – npm audit, Mend (formerly WhiteSource), or Snyk integrated as a CI/CD pipeline stage after dependency installation.
+- **Secrets Detection** – Pre-commit hooks (e.g., detect-secrets) on developer machines to prevent accidental credential commits to Azure DevOps Git.
+
 # 7. Deployment Strategy
 ## 7.1 SAP Cloud Transport Management Service (CTMS)
 CTMS is the single orchestration layer for all application deployments across the BTP landscape, regardless of whether the application is Git-supported or not.
@@ -373,9 +402,11 @@ CTMS is the single orchestration layer for all application deployments across th
 
 ## 7.2 SAP Cloud ALM Integration
 Cloud ALM provides the governance layer on top of CTMS:
-Features: Every deployable change is linked to a Cloud ALM feature (story/task). This ensures traceability from business requirement to production deployment.
-Deployment Management: Cloud ALM triggers and monitors CTMS transports. Transport requests in CTMS are linked to Cloud ALM features.
-Approval Workflow: Deployment to QAS requires approval from the QA lead. Deployment to PROD requires approval from the change advisory board (CAB) or designated approver.
+
+- **Features:** Every deployable change is linked to a Cloud ALM feature (story/task). This ensures traceability from business requirement to production deployment.
+- **Deployment Management:** Cloud ALM triggers and monitors CTMS transports. Transport requests in CTMS are linked to Cloud ALM features.
+- **Approval Workflow:** Deployment to QAS requires approval from the QA lead. Deployment to PROD requires approval from the change advisory board (CAB) or designated approver.
+
 ### Cloud ALM Deployment Logging
 Cloud ALM logs every deployment event:
 | Event | Logged Data | Retention |
@@ -407,10 +438,12 @@ This section defines who can perform which deployment activities across the land
 
 ### 7.4.3 Segregation of Duties Summary
 Key SoD Rules:
-A Developer can upload/create transports but cannot approve or import to QAS or PROD.
-A QA Approver can approve for QAS but cannot approve for PROD (different approver required).
-A Basis/Platform Admin can import transports but cannot approve them (they execute on behalf of the approver).
-No single person should hold upload + approve + import rights simultaneously.
+
+- A Developer can upload/create transports but cannot approve or import to QAS or PROD.
+- A QA Approver can approve for QAS but cannot approve for PROD (different approver required).
+- A Basis/Platform Admin can import transports but cannot approve them (they execute on behalf of the approver).
+- No single person should hold upload + approve + import rights simultaneously.
+
 | Role | Upload | Approve QAS | Import QAS | Approve PROD | Import PROD |
 | --- | --- | --- | --- | --- | --- |
 | Developer | ✓ | ✗ | ✗ | ✗ | ✗ |
@@ -438,21 +471,27 @@ BTP: Credentials stored in SAP Credential Store or BTP Destination service. Inte
 Pre-commit hooks: detect-secrets or Azure DevOps Credential Scanner runs on every commit to prevent accidental credential exposure.
 ## 8.3 Static Application Security Testing (SAST)
 SAST is a mandatory pipeline stage for all Git-supported applications:
-Tool: SonarQube / SonarCloud (recommended), Checkmarx, or Fortify.
-Integration: Azure DevOps Pipeline task; results posted as PR comments and dashboard.
-Gate: Critical and high findings block the pipeline. Medium findings generate warnings.
-Coverage: JavaScript/TypeScript (Fiori, Mobile), Node.js (CAP), Groovy/XML (Integration flows).
+
+- **Tool:** SonarQube / SonarCloud (recommended), Checkmarx, or Fortify.
+- **Integration:** SAP BTP CI/CD pipeline stage; results posted to Cloud ALM and the development team.
+- **Gate:** Critical and high findings block the pipeline. Medium findings generate warnings.
+- **Coverage:** JavaScript/TypeScript (Fiori, Mobile), Node.js (CAP).
+
 ## 8.4 Dependency & Vulnerability Scanning (SCA)
-Tool: npm audit (basic), Mend (WhiteSource), Snyk, or GitHub Advanced Security for Azure DevOps.
-Integration: Runs as a pipeline stage after dependency installation.
-Gate: Known critical CVEs block the pipeline. License compliance violations flagged.
-Frequency: On every build (CI trigger) and scheduled weekly scan of all repositories.
+
+- **Tool:** npm audit (basic), Mend (WhiteSource), or Snyk.
+- **Integration:** Runs as a SAP BTP CI/CD pipeline stage after dependency installation.
+- **Gate:** Known critical CVEs block the pipeline. License compliance violations flagged.
+- **Frequency:** On every build (CI trigger) and scheduled weekly scan of all repositories.
+
 # 9. Monitoring, Logging & Alerting
 ## 9.1 SAP Cloud ALM – Deployment Logging
 Cloud ALM serves as the central audit log for all deployment activities across the landscape:
-Every CTMS transport (create, approve, deploy, reject, fail) is logged with timestamp, actor, and outcome.
-CI/CD pipeline results (build success/failure, test results, scan outcomes) are linked to Cloud ALM features.
-Deployment dashboards in Cloud ALM provide a single pane of glass for all application deployments.
+
+- Every CTMS transport (create, approve, deploy, reject, fail) is logged with timestamp, actor, and outcome.
+- CI/CD pipeline results (build success/failure, test results, scan outcomes) are linked to Cloud ALM features.
+- Deployment dashboards in Cloud ALM provide a single pane of glass for all application deployments.
+
 ### Logging Matrix
 | Application Type | CI/CD Build Log | Deployment Log | Failure Logging |
 | --- | --- | --- | --- |
@@ -462,10 +501,12 @@ Deployment dashboards in Cloud ALM provide a single pane of glass for all applic
 
 ## 9.2 CI/CD Build Failure Logging
 When a CI/CD pipeline build fails:
-The pipeline posts the failure status to Cloud ALM (feature text updated to “Build Failed”).
-The detailed build log remains in Azure DevOps Pipelines for developer diagnosis.
-A notification is sent via Azure DevOps notifications and, optionally, via SAP Alert Notification Service.
-For applications without CI/CD (non-Git or Integration without pipelines), failures occur at deployment time (CTMS import) and are logged in Cloud ALM deployment management and the application’s native logs.
+
+- The pipeline posts the failure status to Cloud ALM (feature text updated to “Build Failed”).
+- The detailed build log remains in the SAP BTP CI/CD service for developer diagnosis.
+- A notification is sent via SAP Alert Notification Service (and optionally email/Teams/Slack).
+- For non-Git applications (e.g., Work Zone), failures occur at deployment time (CTMS import) and are logged in Cloud ALM deployment management and the application’s native logs.
+
 ## 9.3 SAP Alert Notification Service (ANS) for BTP
 The SAP Alert Notification Service provides real-time, event-driven alerting for the BTP platform and applications.
 ### Alert Configuration
@@ -529,13 +570,24 @@ SAP Automation Pilot is a BTP service that provides automated command execution,
 
 ## 10.2 Deployment Tracking & Self-Healing
 Automation Pilot integrates with CTMS, Cloud ALM, and ANS to create a closed-loop deployment tracking system:
-1. CI/CD or manual upload → CTMS transport created2. Cloud ALM approval → CTMS deploys to QAS/PROD3. Automation Pilot runs post-deployment health check4. IF health check passes → Cloud ALM status updated to “Deployed Successfully”5. IF health check fails → ANS alert → Automation Pilot triggers rollback → Cloud ALM status “Rolled Back”6. Deployment metrics aggregated and reported
+
+```
+1. CI/CD or manual upload → CTMS transport created
+2. Cloud ALM approval → CTMS deploys to QAS/PROD
+3. Automation Pilot runs post-deployment health check
+4. IF health check passes → Cloud ALM status updated to "Deployed Successfully"
+5. IF health check fails → ANS alert → Automation Pilot triggers rollback → Cloud ALM status "Rolled Back"
+6. Deployment metrics aggregated and reported
+```
+
 # 11. Governance & Compliance
 ## 11.1 Change Management Governance
-Every change deployed to QAS or PROD must be linked to a Cloud ALM feature.
-Git-supported changes must be traceable to a Git commit and Azure DevOps work item.
-Production deployments require documented approval in Cloud ALM (CAB or designated approver).
-Emergency changes follow an expedited workflow but still require post-deployment approval and documentation.
+
+- Every change deployed to QAS or PROD must be linked to a Cloud ALM feature.
+- Git-supported changes must be traceable to a Git commit and Azure DevOps work item.
+- Production deployments require documented approval in Cloud ALM (CAB or designated approver).
+- Emergency changes follow an expedited workflow but still require post-deployment approval and documentation.
+
 ## 11.2 Audit Trail
 The combined toolchain provides a complete audit trail:
 | Layer | Audit Data | Tool | SIEM Feed |
@@ -550,11 +602,12 @@ The combined toolchain provides a complete audit trail:
 | S/4HANA transport | CTS import log, transport release | S/4HANA STMS / SM20 | Yes (via ETD) |
 
 ## 11.3 Compliance Policies
-Segregation of Duties (SoD): Developers cannot approve their own changes. Separate roles for development, QA approval, and production approval (see Section 7.5).
-No Direct Production Access: No developer has direct deployment rights to PROD. All changes go through CTMS + Cloud ALM approval.
-Regular Access Reviews: Quarterly review of BTP role assignments and S/4HANA authorizations.
-Data Protection: No production data in DEV/QAS. Anonymized or synthetic test data used.
-SIEM Monitoring: All deployment and security events forwarded to SIEM. Correlation rules for SoD violations, unauthorized access, and policy bypasses (see Section 9.4).
+
+- **Segregation of Duties (SoD):** Developers cannot approve their own changes. Separate roles for development, QA approval, and production approval (see Section 7.4).
+- **No Direct Production Access:** No developer has direct deployment rights to PROD. All changes go through CTMS + Cloud ALM approval.
+- **Regular Access Reviews:** Quarterly review of BTP role assignments and authorizations.
+- **Data Protection:** No production data in DEV/QAS. Anonymized or synthetic test data used.
+- **SIEM Monitoring:** All deployment and security events forwarded to SIEM. Correlation rules for SoD violations, unauthorized access, and policy bypasses (see Section 9.4).
 
 # 12. Roles & Responsibilities
 | Role | Responsibilities | Tools |
