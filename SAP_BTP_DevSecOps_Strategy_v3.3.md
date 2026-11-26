@@ -6,7 +6,7 @@
 
 SAP Business Technology Platform Applications
 Azure DevOps & SAP Cloud ALM Integration
-DRAFT Document Version: 3.3 Date: November 2026 Author: Rodion RODIONOV Organization: SAP SE – Cross-Solution Delivery, Integrated Toolchain Classification: SAP Internal
+Document Version: 3.3 Date: November 2026 Author: Rodion RODIONOV Organization: SAP SE – Cross-Solution Delivery, Integrated Toolchain
 # Document Control
 ## Revision History
 | Version | Date | Author | Changes |
