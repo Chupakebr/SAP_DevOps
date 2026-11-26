@@ -1,10 +1,10 @@
-# SAP BTP DevSecOps Strategy v3.3
+# SAP BTP DevSecOps Strategy
 
 DevSecOps strategy document for SAP Business Technology Platform applications, covering Azure DevOps & SAP Cloud ALM integration.
 
 ## Contents
 
-- [SAP_BTP_DevSecOps_Strategy_v3.3.md](SAP_BTP_DevSecOps_Strategy_v3.3.md) — Full strategy document in Markdown
+- [SAP_BTP_DevSecOps_Strategy.md](SAP_BTP_DevSecOps_Strategy.md) — Full strategy document in Markdown
 
 ## Document Info
 
