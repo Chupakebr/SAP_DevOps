@@ -272,7 +272,11 @@ After Content Agent creates the transport bundle in cTMS, the following activiti
 | Post-deploy validation on QAS | Smoke tests run against Mobile Services (QAS) after transport import | Automation Pilot |
 
 #### Transport Mechanism: SAP Content Agent → cTMS
-MDK app content is transported via SAP Cloud Transport Management Service (cTMS) using the SAP Content Agent service. This is the official, SAP-documented integration path.
+MDK app content is transported via SAP Cloud Transport Management Service (cTMS) using the SAP Content Agent service. This is the official, SAP-documented integration path. For step-by-step configuration, see the SAP tutorial: [Transport Mobile Apps Using SAP Content Agent](https://developers.sap.com/tutorials/btp-content-agent-transport-mobile-apps/).
+
+![MDK content transport via SAP Content Agent and cTMS](images/mdk-content-agent-transport.png)
+
+The diagram shows the end-to-end transport: SAP Content Agent in the central (DEV) subaccount exports the MDK app content to the cTMS transport node (D), which follows the configured transport route to TEST (T) and PROD (P). Each target subaccount uses a Deploy service destination to import the content into its SAP Mobile Services instance.
 
 | Aspect | Details |
 | --- | --- |
