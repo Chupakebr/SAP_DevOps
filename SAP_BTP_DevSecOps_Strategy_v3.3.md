@@ -169,8 +169,6 @@ Alert proactively – leverage Alert Notification Service for real-time incident
 ## 3.1 Subaccount Topology
 The BTP landscape follows a three-tier subaccount model aligned with the standard SAP transport landscape. An additional platform services subaccount hosts shared DevSecOps tooling.
 
-![BTP Subaccount Topology](images/btp-subaccount-topology.png)
-
 ![BTP Landscape Diagram](images/btp-landscape-diagram.png)
 
 | Subaccount | Purpose | Key Services |
@@ -682,8 +680,6 @@ Begin CI/CD pipeline development for the first pilot application (e.g., a Fiori 
 | SSAM | SAP Mobile Services application (mobile development using MDK) |
 
 ## B. Reference Architecture Diagram
-
-![Reference Architecture](images/reference-architecture.png)
 
 ![Reference Architecture Detail](images/reference-architecture-2.png)
 
