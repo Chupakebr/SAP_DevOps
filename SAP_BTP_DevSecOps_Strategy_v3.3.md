@@ -56,27 +56,15 @@ DRAFT Document Version: 3.3 Date: November 2026 Author: Rodion RODIONOV Organiza
 - [5. Application Pipeline Strategy](#5-application-pipeline-strategy)
   - [5.1 Git-Supported Applications](#51-git-supported-applications)
     - [5.1.1 SSAM – Mobile Development (SAP Mobile Services / MDK)](#511-ssam-mobile-development-sap-mobile-services-mdk)
+      - [Deployment Package Location](#deployment-package-location)
+      - [Scanning Before Bundle Creation (Pre-Export Stage)](#scanning-before-bundle-creation-pre-export-stage)
+      - [Scanning After Bundle Creation (Post-Export Stage)](#scanning-after-bundle-creation-post-export-stage)
       - [Transport Mechanism: SAP Content Agent → cTMS](#transport-mechanism-sap-content-agent-ctms)
       - [Prerequisites for MDK → cTMS Integration](#prerequisites-for-mdk-ctms-integration)
       - [Pipeline Flow](#pipeline-flow)
     - [5.1.2 SAP Fiori Applications](#512-sap-fiori-applications)
-    - [5.1.3 SAP Integration Services (SAP Integration Suite)](#513-sap-integration-services-sap-integration-suite)
-      - [Artifact-Level Transport Support Matrix](#artifact-level-transport-support-matrix)
   - [5.2 Non-Git Applications](#52-non-git-applications)
-    - [5.2.1 SAP Build Process Automation (BPA)](#521-sap-build-process-automation-bpa)
     - [5.2.2 SAP Build Work Zone](#522-sap-build-work-zone)
-    - [5.2.3 SAP Datasphere / Data Cloud](#523-sap-datasphere-data-cloud)
-  - [5.3 S/4HANA PCE Extensions (from BAS)](#53-s4hana-pce-extensions-from-bas)
-    - [5.3.1 Architecture Overview](#531-architecture-overview)
-    - [5.3.2 Development Scenarios](#532-development-scenarios)
-    - [5.3.3 gCTS Integration (Git-enabled CTS) optional](#533-gcts-integration-git-enabled-cts-optional)
-    - [5.3.4 Fiori Deployment to S/4HANA BSP Repository (legacy)](#534-fiori-deployment-to-s4hana-bsp-repository-legacy)
-    - [5.3.5 Prerequisites for BAS-to-S/4HANA Connectivity](#535-prerequisites-for-bas-to-s4hana-connectivity)
-    - [5.3.6 ABAP Code Quality – ATC Checks on Transport Release](#536-abap-code-quality-atc-checks-on-transport-release)
-      - [ATC Check Categories](#atc-check-categories)
-      - [ABAP Unit Tests – Execution via ATC](#abap-unit-tests-execution-via-atc)
-      - [Transport Release Flow with ATC](#transport-release-flow-with-atc)
-      - [ATC Configuration Prerequisites](#atc-configuration-prerequisites)
 - [6. CI/CD Pipeline Design](#6-cicd-pipeline-design)
   - [6.1 Pipeline Architecture](#61-pipeline-architecture)
   - [6.2 Build & Quality Gates](#62-build-quality-gates)
@@ -89,7 +77,6 @@ DRAFT Document Version: 3.3 Date: November 2026 Author: Rodion RODIONOV Organiza
   - [7.3 Transport Routes](#73-transport-routes)
   - [7.4 Deployment Roles & Authorization Matrix](#74-deployment-roles-authorization-matrix)
     - [7.4.1 BTP Application Deployments (via CTMS + Cloud ALM)](#741-btp-application-deployments-via-ctms-cloud-alm)
-    - [7.4.2 S/4HANA PCE Deployments (via CTS / gCTS + Cloud ALM)](#742-s4hana-pce-deployments-via-cts-gcts-cloud-alm)
     - [7.4.3 Segregation of Duties Summary](#743-segregation-of-duties-summary)
 - [8. Security Strategy](#8-security-strategy)
   - [8.1 SAP Cloud Identity Services (CIS)](#81-sap-cloud-identity-services-cis)
@@ -118,19 +105,22 @@ DRAFT Document Version: 3.3 Date: November 2026 Author: Rodion RODIONOV Organiza
 - [13. Appendix](#13-appendix)
   - [A. Glossary](#a-glossary)
   - [B. Reference Architecture Diagram](#b-reference-architecture-diagram)
-  - [C. Pipeline YAML Template (Azure DevOps)](#c-pipeline-yaml-template-azure-devops)
+  - [C. Pipeline YAML Template (SAP BTP CI/CD)](#c-pipeline-yaml-template-sap-btp-cicd)
   - [D. CTMS Configuration Reference](#d-ctms-configuration-reference)
   - [E. SIEM Configuration Reference](#e-siem-configuration-reference)
-
 # 1. Executive Summary
-This document defines the DevSecOps strategy for managing the full lifecycle of SAP Business Technology Platform (BTP) applications. It addresses source code management, CI/CD pipelines, deployment orchestration, security, monitoring, and automation across two distinct application categories:
-Git-supported applications – SSAM (Mobile), Fiori Apps, and Integration Services – that leverage Azure DevOps Git repositories with CI/CD pipelines producing MTAR archives for deployment and Cloud ALM.
-Non-Git applications – SAP Build Process Automation (BPA), SAP Build Work Zone, and SAP Data Cloud – that rely on native content transport via CTMS and Cloud ALM without source code version control.
+This document defines the DevSecOps strategy for managing the full lifecycle of the following SAP Business Technology Platform (BTP) applications for QatarEnergy:
+- **SSAM (Mobile)** – built with SAP Mobile Development Kit (MDK) on SAP Mobile Services
+- **SAP Fiori Applications** – UI5 apps and CAP services deployed to both BTP and S/4HANA
+- **SAP Build Work Zone** – site and content federation management
+
+All CI/CD pipelines use exclusively the **SAP BTP Continuous Integration & Delivery (CI/CD) service**. Source code is managed in Azure DevOps Git repositories. Deployment is orchestrated through SAP Cloud Transport Management (CTMS) with governance via SAP Cloud ALM. Security is embedded at every pipeline stage.
+
 The strategy integrates the following SAP and Microsoft platform services into a cohesive DevSecOps toolchain:
 | Service | Role in Toolchain |
 | --- | --- |
 | Azure DevOps (Git) | Source code management, branching, pull requests |
-| Azure DevOps Pipelines / SAP CIS | Build, test, security scan, MTAR packaging |
+| SAP BTP CI/CD Service | Build, test, security scan, MTAR packaging – primary and exclusive CI/CD platform |
 | SAP Cloud Transport Management (CTMS) | Transport orchestration across DEV → QAS → PROD |
 | SAP Cloud ALM | Change & deployment management, monitoring, logging |
 | SAP Cloud Identity Services (CIS) | Identity federation, SSO, role-based access |
@@ -200,7 +190,6 @@ All Git-supported applications use Azure DevOps Git as the central source code m
 | --- | --- | --- |
 | SSAM Mobile | sap-mobile-{app-name} | sap-mobile-field-service |
 | Fiori Apps | sap-fiori-{app-name} | sap-fiori-purchase-orders |
-| Integration Flows | sap-integration-{package-name} | sap-integration-order-replication |
 
 ## 4.2 Branching Model
 A trunk-based development model with short-lived feature branches is recommended:
@@ -222,17 +211,52 @@ No direct pushes: All changes to main must go through a PR.
 Security Gate: PRs that fail the SAST scan or introduce critical/high-severity vulnerabilities in dependency scanning are automatically blocked from merging.
 # 5. Application Pipeline Strategy
 ## 5.1 Git-Supported Applications
-These applications follow a unified pipeline pattern: developers work in SAP Business Application Studio (BAS), commit to Azure DevOps Git, and CI/CD pipelines produce MTAR archives that are uploaded to CTMS for transport through the landscape.
+These applications follow a unified pipeline pattern: developers work in SAP Business Application Studio (BAS), commit to Azure DevOps Git, and SAP BTP CI/CD service pipelines produce deployment artifacts that are uploaded to CTMS for transport through the landscape.
 ### 5.1.1 SSAM – Mobile Development (SAP Mobile Services / MDK)
 SSAM mobile applications are built using the SAP Mobile Development Kit (MDK). MDK apps are metadata-driven: the developer creates MDK metadata (rules, actions, pages, services) in BAS, and this metadata is deployed to SAP Mobile Services, which interprets it at runtime on the mobile device. MDK apps do not produce a traditional compiled MTAR via the MBT build tool.
+
+#### Deployment Package Location
+The SSAM deployment package is a **MDK metadata content package** generated and managed by **SAP Content Agent** running in the **DEV subaccount**. It is not produced by the CI/CD pipeline directly. The SAP BTP CI/CD pipeline's role is quality assurance (validation, scanning, testing); the actual transport package is assembled by Content Agent from the live MDK content deployed to SAP Mobile Services on DEV.
+
+Package generation flow:
+1. Developer deploys MDK metadata to SAP Mobile Services (DEV subaccount) from BAS.
+2. SAP Content Agent UI (in DEV subaccount) discovers the MDK app content from Mobile Services.
+3. Content Agent packages the content as a transport request and forwards it to cTMS (DEV node).
+4. The resulting package in cTMS is the deployable artifact that travels DEV → QAS → PROD.
+
+#### Scanning Before Bundle Creation (Pre-Export Stage)
+Scanning is performed in the **SAP BTP CI/CD service pipeline** before the Content Agent export is triggered. The pipeline is triggered on every Git push to Azure DevOps and runs the following stages against the MDK source files in the repository:
+
+| Stage | Activity | Gate |
+| --- | --- | --- |
+| 1. Source | Checkout MDK project from Azure DevOps Git | Clean checkout |
+| 2. Lint & Validate | MDK metadata schema validation, rule syntax check, JSON/YAML lint | No schema violations |
+| 3. SAST | Static security analysis of MDK rules, JavaScript rule handlers, and any CAP/OData backend code | No critical/high findings |
+| 4. SCA | Dependency vulnerability scan (`npm audit`) on Node.js dependencies used in MDK rules/services | No critical CVEs |
+| 5. Unit Tests | Execute MDK unit tests and backend service tests (if applicable) | All tests pass |
+| 6. Deploy to Mobile Services (DEV) | Deploy validated MDK metadata to SAP Mobile Services DEV subaccount | Deployment succeeds |
+
+Only if **all pipeline stages pass** does the developer proceed to trigger the Content Agent export.
+
+#### Scanning After Bundle Creation (Post-Export Stage)
+After the Content Agent creates the transport bundle in cTMS, the following validation activities are performed before the bundle is promoted to QAS:
+
+| Activity | Description | Responsible |
+| --- | --- | --- |
+| Transport package integrity check | Cloud ALM verifies the transport request is complete and linked to a Cloud ALM feature | Cloud ALM (automated) |
+| QA smoke test on DEV | QA team validates MDK app behaviour on Mobile Services (DEV) before QAS approval | QA Lead |
+| Cloud ALM deployment approval | QA Lead reviews CI/CD pipeline results and QA sign-off, then approves transport to QAS in Cloud ALM | QA Lead (manual approval) |
+| Post-deploy validation on QAS | Automated smoke tests run against Mobile Services (QAS) after transport import | Automation Pilot |
+
 #### Transport Mechanism: SAP Content Agent → cTMS
-MDK app content is transported via SAP Cloud Transport Management Service (cTMS) using the SAP Content Agent service. This is the official, SAP-documented integration path (see SAP Tutorial: Transport MDK apps using SAP Content Agent UI).
-Key Clarification: MDK apps are transported as content packages via SAP Content Agent, not as MTARs built by MBT. The Content Agent UI discovers MDK app content from SAP Mobile Services, packages it as a transport request, and forwards it to cTMS. This is the same pattern used by other BTP content-based services (e.g., Integration Suite, SAP Build Work Zone).
+MDK app content is transported via SAP Cloud Transport Management Service (cTMS) using the SAP Content Agent service. This is the official, SAP-documented integration path.
+
 | Aspect | Details |
 | --- | --- |
 | Development IDE | SAP Business Application Studio (BAS) with MDK extensions |
 | Source Control | Azure DevOps Git (MDK project source files) |
-| Build Artifact | MDK metadata content package (exported via SAP Content Agent – not an MTAR from MBT) |
+| CI/CD Platform | SAP BTP Continuous Integration & Delivery (CI/CD) service |
+| Build Artifact | MDK metadata content package (assembled by SAP Content Agent – not an MTAR from MBT) |
 | Transport Tool | SAP Content Agent UI → exports MDK content from Mobile Services → creates transport request in cTMS |
 | Transport Engine | SAP Cloud Transport Management Service (cTMS) |
 | Governance | SAP Cloud ALM – orchestrates approval and deployment of cTMS transports |
@@ -241,76 +265,61 @@ Key Clarification: MDK apps are transported as content packages via SAP Content 
 #### Prerequisites for MDK → cTMS Integration
 | Prerequisite | Details |
 | --- | --- |
-| SAP Content Agent service | Subscribed in the source (DEV) subaccount. Provides the Content Agent UI for content discovery and export. |
-| cTMS destination | A destination (e.g., TransportManagementService) configured in the DEV subaccount, pointing to the cTMS instance using the cTMS service key credentials. |
-| SAP Mobile Services | MDK app must be deployed to Mobile Services on the DEV subaccount. The Content Agent discovers content from the Mobile Applications > Native/MDK area. |
-| cTMS transport landscape | Transport nodes (DEV, QAS, PROD) and routes configured in cTMS, mapped to the respective BTP subaccounts with Mobile Services. |
+| SAP Content Agent service | Subscribed in the DEV subaccount. Provides the Content Agent UI for content discovery and export. |
+| cTMS destination | A destination (e.g., TransportManagementService) configured in the DEV subaccount using cTMS service key credentials. |
+| SAP Mobile Services | MDK app must be deployed to Mobile Services on the DEV subaccount. The Content Agent discovers content from Mobile Applications > Native/MDK. |
+| cTMS transport landscape | Transport nodes (DEV, QAS, PROD) and routes configured in cTMS, mapped to respective BTP subaccounts. |
 | Cloud ALM connection | cTMS connected to Cloud ALM for deployment orchestration and approval workflows. |
+| SAP BTP CI/CD service | CI/CD service subscribed in the Platform subaccount. Pipeline job configured with Azure DevOps Git source and MDK validation stages. |
 
 #### Pipeline Flow
-Option A – MDK-Only Apps (Primary Path):
-Developer (BAS/MDK) → Git Push to Azure DevOps → CI/CD Pipeline (optional):  1. Checkout MDK project  2. Validate MDK metadata (schema check, rule validation, lint)  3. Static analysis / code review checks  4. Deploy MDK app to SAP Mobile Services (DEV subaccount)Content Agent Transport:  5. Open SAP Content Agent UI in DEV subaccount  6. Select MDK app content from Mobile Services  7. Export → creates transport request in cTMS (DEV node)Governance:  8. Cloud ALM approval → cTMS imports to QAS (Mobile Services on QAS subaccount)  9. Cloud ALM approval → cTMS imports to PROD (Mobile Services on PROD subaccount)
-Option B – MDK App + Server-Side Backend (CAP/OData):
-If the mobile solution includes a server-side CAP backend or custom OData service in addition to the MDK metadata, two parallel transport streams are required:
-Stream 1 – Backend (MTAR via CI/CD):Developer (BAS) → Git Push → Azure DevOps Pipeline:  1. Checkout backend code (CAP/Node.js)  2. npm install, lint, unit tests, SAST, SCA  3. MBT build → MTAR  4. Upload MTAR to cTMS (DEV node)  5. Cloud ALM approval → cTMS to QAS → cTMS to PRODStream 2 – MDK Metadata (Content Agent):Developer (BAS/MDK) → Deploy to Mobile Services (DEV)  1. Content Agent UI → export MDK content → cTMS (DEV node)  2. Cloud ALM approval → cTMS to QAS → cTMS to PRODNote: Both streams should be coordinated under the same Cloud ALM featureto ensure backend + MDK frontend are promoted together.
+Developer (BAS/MDK) → Git Push to Azure DevOps → SAP BTP CI/CD Pipeline:
+1. Checkout MDK project
+2. Validate MDK metadata (schema check, rule validation, lint)
+3. SAST scan (static analysis on JS rule handlers and service code)
+4. SCA / dependency vulnerability scan
+5. Unit tests
+6. Deploy MDK app to SAP Mobile Services (DEV subaccount)
 
-CI/CD for MDK Content: The CI/CD pipeline can still validate, lint, and test MDK metadata files in the Git repository. However, the transport to cTMS is handled by Content Agent (not by the pipeline directly uploading an MTAR). The pipeline’s role for MDK-only apps is quality assurance; the Content Agent handles the actual transport packaging.
+Content Agent Transport:
+7. Open SAP Content Agent UI in DEV subaccount
+8. Select MDK app content from Mobile Services
+9. Export → creates transport request in cTMS (DEV node)
+
+Governance:
+10. Cloud ALM approval → cTMS imports to QAS (Mobile Services on QAS subaccount)
+11. Post-deploy smoke test on QAS
+12. Cloud ALM approval → cTMS imports to PROD (Mobile Services on PROD subaccount)
 
 ### 5.1.2 SAP Fiori Applications
+Fiori applications are deployed to both **SAP BTP** (HTML5 Repository) and **S/4HANA** (via CTMS/Cloud ALM). The SAP BTP CI/CD service handles all build, test, and packaging stages.
+
 | Aspect | Details |
 | --- | --- |
 | Development IDE | SAP Business Application Studio (BAS) with Fiori tools |
 | Source Control | Azure DevOps Git |
-| CI/CD | Azure DevOps Pipelines (or SAP CI/CD Service) |
+| CI/CD Platform | SAP BTP Continuous Integration & Delivery (CI/CD) service |
 | Build Artifact | MTAR (containing UI5 apps, CAP services, etc.) |
+| Deployment Target | SAP BTP HTML5 Repository and/or S/4HANA via CTMS |
 | Deployment Path | MTAR → CTMS → Cloud ALM → QAS → PROD |
 
 Pipeline flow:
-Developer (BAS) → Git Push → Azure DevOps Pipeline:  1. Checkout code  2. npm install / dependency resolution  3. ESLint + UI5 linter  4. Unit tests (QUnit / OPA5 / Jest)  5. SAST scan  6. Dependency vulnerability scan  7. MBT build → MTAR  8. Upload MTAR to CTMS (DEV node)  9. Notify Cloud ALM→ CTMS transport to QAS → CTMS transport to PROD
-### 5.1.3 SAP Integration Services (SAP Integration Suite)
-| Aspect | Details |
-| --- | --- |
-| Development | SAP Integration Suite Design workspace (Cloud Integration, API Management) |
-| Source Control | Azure DevOps Git (optional – via Integration Suite Git integration or manual export/import)https://community.sap.com/t5/technology-blog-posts-by-sap/transport-cap-apps-and-integration-artefacts-directly-from-git-with-sap/ba-p/14497880 |
-| CI/CD | Optional – Azure DevOps Pipelines or SAP CI/CD Service. Can also use CTMS-only flow. |
-| Build Artifact | MTAR (Integration content package) |
-| Deployment Path | MTAR → CTMS → Cloud ALM → QAS → PROD |
+Developer (BAS) → Git Push → SAP BTP CI/CD Pipeline:
+1. Checkout code
+2. npm install / dependency resolution
+3. ESLint + UI5 linter
+4. Unit tests (QUnit / OPA5 / Jest)
+5. SAST scan
+6. Dependency vulnerability scan (SCA)
+7. MBT build → MTAR
+8. Upload MTAR to CTMS (DEV node)
+9. Notify Cloud ALM
+→ Cloud ALM approval → CTMS transport to QAS → Cloud ALM approval → CTMS transport to PROD
 
-Note: CI/CD is optional for Integration Services. When CI/CD is not used, the integration developer exports the content package as an MTAR directly from the Integration Suite and uploads it to CTMS. The CTMS + Cloud ALM approval workflow remains the same regardless.
-Pipeline flow (with CI/CD):
-Developer (Integration Suite) → Git Push (or API export) → Azure DevOps Pipeline:  1. Checkout / download integration package  2. Validate integration flow configuration  3. Security review (credential externalization check)  4. Package as MTAR  5. Upload to CTMS (DEV node)  6. Notify Cloud ALM→ CTMS transport to QAS → CTMS transport to PROD
-Pipeline flow (without CI/CD):
-Developer (Integration Suite) → Export MTAR → Upload to CTMS (DEV node)→ Cloud ALM approval → CTMS transport to QAS → CTMS transport to PROD
-Note: No, not all Integration Suite artifacts can be packaged as MTAR. The transport mechanism depends on the specific capability. Here's the accurate breakdown:
-#### Artifact-Level Transport Support Matrix
-| Integration Suite Capability | Transportable Artifacts | Content Agent → cTMS (MTAR) | Alternative |
-| --- | --- | --- | --- |
-| Cloud Integration | Integration packages (iFlows, message mappings, value mappings, scripts, XSLT, Groovy) | Yes — Confirmed. Content Agent packages as MTAR. | CTS+, MTAR Download, Manual Export/Import |
-| API Management | API proxies, API products, API providers, KVMs, certificates | Yes — Confirmed. Content Agent assembles API artifacts in MTAR. | MTAR Download, Manual Export/Import |
-| Integration Advisor | MAGs, MIGs, custom messages | Partial — typically transported as part of an integration package. Standalone transport needs verification. | Export/Import via Integration Advisor UI |
-| Trading Partner Management | TP profiles, agreements, B2B configs | No explicit Content Agent → cTMS docs. | Manual export/import, or as part of Cloud Integration packages |
-| Event Mesh | Queues, topic subscriptions, webhooks | No — tenant-specific config, not transported as MTAR. | Manual configuration, IaC/Terraform |
-| Open Connectors | Connector instances, formulas | No — own config model, not MTAR-packaged. | Manual config replication, API export |
-| Graph | Business data graph configuration | No — tenant-specific. | Manual configuration per tenant |
 
-Key Takeaway: Only Cloud Integration and API Management have confirmed, fully-supported Content Agent → cTMS (MTAR) transport. Other capabilities require alternative approaches. Manual runbook.. These should still be tracked in Cloud ALM features for traceability.
 ## 5.2 Non-Git Applications
-These applications do not use Git-based source control. Content is developed directly in the application and transported via CTMS with Cloud ALM governance. Security controls shift from code-level scanning to configuration governance, role-based access control, and change approval workflows.
-### 5.2.1 SAP Build Process Automation (BPA)
-| Aspect | Details |
-| --- | --- |
-| Development | SAP Build Process Automation Lobby (low-code/no-code) |
-| Source Control | Not applicable (content managed within BPA) |
-| CI/CD | Not applicable |
-| Transport Mechanism | CTMS (BPA integrates natively with CTMS for content export/import) |
-| Deployment Path | BPA (DEV) → CTMS → Cloud ALM approval → QAS → PROD |
+SAP Build Work Zone does not use Git-based source control. Configuration is managed directly in the Work Zone admin console and transported via CTMS with Cloud ALM governance. Security controls are based on configuration governance, role-based access control, and change approval workflows.
 
-Developer (BPA Lobby, DEV) → Release project → CTMS picks up content→ Cloud ALM approval → CTMS transport to QAS → CTMS transport to PROD
-Security controls:
-Role-based access in BPA Lobby (developer vs. admin vs. viewer)
-Change approval in Cloud ALM before QAS/PROD deployment
-Audit logging of all process automation changes
-Review of credentials and destinations used in automations
 ### 5.2.2 SAP Build Work Zone
 | Aspect | Details |
 | --- | --- |
@@ -321,93 +330,19 @@ Review of credentials and destinations used in automations
 | Deployment Path | Work Zone (DEV) → CTMS → Cloud ALM approval → QAS → PROD |
 
 Admin (Work Zone, DEV) → Configure site / content → CTMS export→ Cloud ALM approval → CTMS transport to QAS → CTMS transport to PROD
-### 5.2.3 SAP Datasphere / Data Cloud
 
-![SAP Datasphere Transport Flow](images/datasphere-transport.png)
 
-| Aspect | Details |
-| --- | --- |
-| Development | SAP Datasphere modeler (spaces, views, data flows, analytic models) |
-| Source Control | Not applicable (content managed within Datasphere) |
-| CI/CD | Not applicable |
-| Transport Mechanism | CTMS (Datasphere integrates with CTMS for content transport) |
-| Deployment Path | Datasphere (DEV) → CTMS → Cloud ALM approval → QAS → PROD |
-
-Data Modeler (Datasphere, DEV) → Create/modify spaces, views, flows → CTMS export→ Cloud ALM approval → CTMS transport to QAS → CTMS transport to PROD
-## 5.3 S/4HANA PCE Extensions (from BAS)
-This section describes how code developed in SAP Business Application Studio (BAS) on BTP is deployed to S/4HANA Private Cloud Edition (PCE) systems. S/4HANA PCE is an on-premise-managed system hosted by SAP, and it requires a specific pipeline and transport approach that differs from pure BTP cloud deployments.
-### 5.3.1 Architecture Overview
-BAS connects to the S/4HANA PCE system via SAP Cloud Connector, which provides a secure tunnel between BTP and the on-premise/PCE network. Developers use BAS with the ABAP Development Tools (ADT) extension or Fiori tools to develop directly against the S/4HANA DEV system.
-Architecture:
-### 5.3.2 Development Scenarios
-| Scenario | Development in BAS | Deployment Target | Transport Mechanism |
-| --- | --- | --- | --- |
-| ABAP Cloud (RAP/CAP) | BAS with ADT extension. Developer creates ABAP objects (CDS views, behavior definitions, service bindings) in BAS, which activates them directly on ABAP cloud DEV via the ADT backend connection. | ABAP cloud DEV → QAS → PROD | ABAP Transport Requests managed by cloud TMS. Optionally managed via gCTS (Git-enabled Change and Transport System) with Git integration to Azure DevOps. |
-| Fiori Elements / Freestyle UI5 | BAS with Fiori tools. UI5 application developed in BAS, deployed to S/4HANA’s BSP repository (ABAP front-end server) or to BTP HTML5 Repository with S/4HANA OData backend. | S/4HANA PCE BSP repo or BTP HTML5 repo | If BSP target: npm run deploy to S/4HANA DEV → ABAP transport to QAS/PROD.If BTP HTML5 target: MTAR → CTMS → CALM → QAS → PROD. |
-| CDS / Analytical Models | CDS views, analytical queries created against S/4HANA DEV. | S/4HANA PCE DEV → QAS → PROD | ABAP Transport Requests (CTS). |
-
-### 5.3.3 gCTS Integration (Git-enabled CTS) optional
-For S/4HANA PCE systems, gCTS enables Git-based source code management for ABAP objects. This bridges the gap between Azure DevOps Git and the S/4HANA transport system:
-Developer creates/modifies ABAP on S/4HANA DEV.
-ABAP objects are committed to a gCTS-managed Git repository on Azure DevOps.
-The CI/CD pipeline runs appropriate checks, not integrated with the transport system.
-
-TMS (integrated with Cloud ALM) manages the import to S/4HANA QAS and PROD via CTS.
-BAS → S/4HANA PCE Flow (with gCTS):BAS (ADT) → ABAP objects on S4-DEV → gCTS commit to Azure DevOps Git→ CI/CD Pipeline (ATC checks, SAST) → Release transport on S4-DEV→ TMS + Cloud ALM approval → CTS import to S4-QAS→ TMS + Cloud ALM approval → CTS import to S4-PROD
-### 5.3.4 Fiori Deployment to S/4HANA BSP Repository (legacy)
-For Fiori applications targeting the S/4HANA front-end server (BSP repository):
-Developer builds the UI5 application in BAS.
-The CI/CD pipeline builds the application, runs tests and security scans.
-The pipeline executes npm run deploy (using @sap/ux-ui5-tooling) to deploy the app to the S/4HANA DEV BSP repository via Cloud Connector.
-The deployment creates an ABAP transport request on S/4HANA DEV.
-Cloud ALM manages the transport approval and CTS import to QAS and PROD.
-BAS → S/4HANA BSP Flow:BAS (Fiori tools) → Git Push → Azure DevOps Pipeline:  1. Checkout UI5 project  2. npm install + build  3. ESLint + unit tests + SAST  4. npm run deploy (to S4-DEV BSP via Cloud Connector)  5. ABAP transport request created on S4-DEV→ Cloud ALM approval → CTS import to S4-QAS → CTS import to S4-PROD
-### 5.3.5 Prerequisites for BAS-to-S/4HANA Connectivity
-| Prerequisite | Details |
-| --- | --- |
-| SAP Cloud Connector | Installed and configured in the S/4HANA PCE network. Exposes S/4HANA HTTP/HTTPS endpoints to BTP. |
-| BTP Destination | Destination configured in BTP DEV subaccount pointing to S/4HANA DEV via Cloud Connector. Authentication: Basic or Principal Propagation (recommended). |
-| ADT Backend | S/4HANA DEV system must have ADT services enabled (transaction SICF – /sap/bc/adt path activated). |
-| gCTS Configuration | gCTS must be configured on S/4HANA DEV with a Git repository connection to Azure DevOps (SSH key or token-based auth). |
-| Transport Landscape | S/4HANA CTS transport routes configured: DEV → QAS → PROD. |
-| User Authorization | BAS developer users must have appropriate S/4HANA roles (developer role in DEV, no direct access to QAS/PROD). See Section 7.4. |
-
-### 5.3.6 ABAP Code Quality – ATC Checks on Transport Release
-The ABAP Test Cockpit (ATC) is the central quality gate for all ABAP code on S/4HANA PCE. ATC triggered automatically by the S/4HANA system when a developer releases a transport task. If ATC finds blocking findings, the transport release is rejected and the developer must fix the issues before releasing again.
-How it works: ATC is configured as a “check-before-release” gate on the S/4HANA DEV system. When a developer clicks “Release” on a transport task or request (via ADT in BAS or transaction SE09/SE10), the system automatically executes the configured ATC check variant against all objects in the transport. If findings with priority 1 (error) are detected, the release is blocked. The developer must resolve all blocking findings and re-attempt the release.
-#### ATC Check Categories
-| ATC Check Category | What It Covers | Gate Criteria |
-| --- | --- | --- |
-| ABAP Unit Tests | Developer-written unit tests using the CL_ABAP_UNIT_ASSERT framework. Test classes are embedded within the ABAP objects and are executed by ATC as part of the check run. Unit tests validate custom business logic, calculations, mappings, and service behavior. | All unit tests must pass (0 failures). Code coverage target: ≥ 70% for critical objects (configurable in ATC check variant). |
-| Code Inspector (SCI) Checks | Static analysis: naming conventions, performance checks (SELECT in loops, buffering), obsolete statements, syntax checks, authorization checks. | No priority 1 (errors). Priority 2 (warnings) reviewed; threshold configurable. |
-| Security Checks | ABAP security vulnerabilities: SQL injection, cross-site scripting, missing authority checks, hard-coded credentials, deprecated crypto functions. | No critical security findings. |
-| Cloud Readiness Checks | Checks for ABAP Cloud compatibility (released APIs only, no direct DB access, no classic dynpro). Essential for RAP/ABAP Cloud development on S/4HANA PCE. | No unreleased API usage for ABAP Cloud tier objects. |
-| Custom Check Variant | Project-specific check variant (transaction ATC) combining the above categories with custom thresholds and exclusions. | Defined by project/architecture team. Registered in ATC system configuration. |
-
-#### ABAP Unit Tests – Execution via ATC
-ABAP Unit Tests are not a separate tool or pipeline step – they are executed within ATC as one of the check categories. When ATC runs on transport release, it automatically discovers and executes all test classes (FOR TESTING) found in the objects being transported. This means:
-Test classes live alongside production code in the same ABAP package/class, marked with FOR TESTING and the appropriate risk level (RISK LEVEL HARMLESS / CRITICAL).
-ATC executes all unit tests in a single run – no separate test runner is needed.
-Test failures block the transport release just like any other priority 1 ATC finding.
-Developers are expected to write unit tests for all custom business logic classes, behavior implementations, and utility methods.
-#### Transport Release Flow with ATC
-Transport Release → ATC → Release or Block:1. Developer completes ABAP development in BAS (ADT) on S4-DEV2. Objects are assigned to a transport request/task3. Developer clicks “Release Task” (ADT or SE09/SE10)  → S/4HANA system automatically triggers ATC check variant:    a) ABAP Unit Tests (all FOR TESTING classes in transported objects)    b) Code Inspector static analysis    c) Security checks    d) Cloud readiness checks (if ABAP Cloud tier)  → ATC Result:    - Priority 1 findings or unit test failures → RELEASE BLOCKED      Developer must fix findings and re-attempt release    - All checks passed → TRANSPORT RELEASED4. Released transport is picked up by CTMS + Cloud ALM5. Cloud ALM approval → CTS import to S4-QAS6. Cloud ALM approval → CTS import to S4-PROD
-#### ATC Configuration Prerequisites
-| Prerequisite | Details |
-| --- | --- |
-| ATC enabled for transport release | Configure ATC as “check-before-release” via transaction ATC → “Transport Check” settings on S/4HANA DEV. Set the check variant and blocking priority level. |
-| Custom ATC check variant | Create a project-specific check variant in transaction ATC that includes: ABAP Unit Tests, Code Inspector checks, security checks, and cloud readiness checks. Assign it as the default for transport release. |
-| ABAP Unit Test classes | Developers must write unit test classes (FOR TESTING) for all custom business logic. Test classes are maintained alongside production code in the same ABAP package. |
-| Exemption process | For legitimate ATC findings that cannot be fixed (e.g., false positives, accepted technical debt), define an ATC exemption workflow via transaction ATC → Exemptions. Exemptions require approval by the architecture/security team. |
-
-Important: ATC on transport release is a server-side S/4HANA quality gate – it runs regardless of whether gCTS or CI/CD is used. Even if there is no CI/CD pipeline for the ABAP development stream, ATC still enforces code quality at the transport level. The CI/CD pipeline (if present) provides additional checks (e.g., SAST on the Git side), but ATC is the primary and mandatory quality gate for ABAP.
 # 6. CI/CD Pipeline Design
 ## 6.1 Pipeline Architecture
-CI/CD pipelines are implemented in Azure DevOps Pipelines (YAML-based) for Git-supported applications. An alternative or complementary option is the SAP Continuous Integration and Delivery Service on BTP, which provides pre-built pipeline templates for SAP-specific build tools (MBT, MTA).
-| Pipeline Option | When to Use | Advantages |
-| --- | --- | --- |
-| Azure DevOps Pipelines | Primary option when Azure DevOps is the Git platform | Unified Git + CI/CD, rich marketplace extensions, native Azure integration, custom agents |
-| SAP CI/CD Service | Alternative when SAP-native tooling is preferred | Pre-built SAP pipeline stages, native CTMS integration, lower configuration effort |
+CI/CD pipelines are implemented exclusively using the **SAP BTP Continuous Integration & Delivery (CI/CD) service** for all Git-supported applications (SSAM, Fiori, Build Work Zone). Azure DevOps Git is used for source code management only; the SAP BTP CI/CD service connects to Azure DevOps repositories as its source.
+
+| Attribute | Details |
+| --- | --- |
+| CI/CD Platform | SAP BTP CI/CD service (mandatory – no Azure DevOps Pipelines) |
+| Git Source | Azure DevOps Git repositories |
+| Pipeline Templates | SAP-provided templates for MBT/MTAR build, MDK validation, UI5 build |
+| Integration | Native CTMS upload, Cloud ALM status notifications |
+| Credentials | Service keys stored in SAP BTP Destination service or SAP Credential Store |
 
 ## 6.2 Build & Quality Gates
 Every pipeline (regardless of platform) must include these stages:
@@ -423,9 +358,9 @@ Every pipeline (regardless of platform) must include these stages:
 
 ## 6.3 Security Scanning in Pipeline
 Security scanning is a mandatory, non-skippable pipeline stage. See Section 8 for the detailed security strategy. In summary:
-SAST – SonarQube (or SonarCloud), Checkmarx, or Fortify integrated as an Azure DevOps Pipeline task.
-SCA / Dependency Scanning – npm audit, Mend (formerly WhiteSource), Snyk, or GitHub Advanced Security for Azure DevOps.
-Secrets Detection – Pre-commit hooks (e.g., detect-secrets, Azure DevOps Credential Scanner) to prevent accidental credential commits.
+SAST – SonarQube (or SonarCloud) integrated as a SAP BTP CI/CD pipeline stage. Results posted to Cloud ALM and the development team.
+SCA / Dependency Scanning – npm audit, Mend (formerly WhiteSource), or Snyk integrated as a CI/CD pipeline stage after dependency installation.
+Secrets Detection – Pre-commit hooks (e.g., detect-secrets) on developer machines to prevent accidental credential commits to Azure DevOps Git.
 # 7. Deployment Strategy
 ## 7.1 SAP Cloud Transport Management Service (CTMS)
 CTMS is the single orchestration layer for all application deployments across the BTP landscape, regardless of whether the application is Git-supported or not.
@@ -452,9 +387,12 @@ Cloud ALM logs every deployment event:
 
 Logging Rule – CI/CD Build Failures: If a CI/CD pipeline build fails, the failure is logged in Cloud ALM (linked to the feature/deployment). If there is no CI/CD pipeline (non-Git applications), any deployment failures are logged in the application’s native monitoring (e.g., BPA execution logs, Work Zone admin logs) and correlated in Cloud ALM via the CTMS transport status.
 ## 7.3 Transport Routes
-Git-Supported Applications:BAS → Git Commit → CI/CD Pipeline → MTAR → CTMS [DEV] → Cloud ALM Approval → CTMS [QAS] → Cloud ALM Approval → CTMS [PROD]Non-Git Applications:Application (DEV) → Native Export → CTMS [DEV] → Cloud ALM Approval → CTMS [QAS] → Cloud ALM Approval → CTMS [PROD]
+Git-Supported Applications (SSAM, Fiori):
+BAS → Git Commit → SAP BTP CI/CD Pipeline → Artifact → CTMS [DEV] → Cloud ALM Approval → CTMS [QAS] → Cloud ALM Approval → CTMS [PROD]
 
-S/4HANA PCE Extensions (from BAS):BAS → Git Commit → CI/CD Pipeline → ABAP Transport / gCTS → CTMS [S4-DEV] → CALM Approval → CTS Import [S4-QAS] → CALM Approval → CTS Import [S4-PROD]
+SAP Build Work Zone (Non-Git):
+Work Zone Admin Console (DEV) → Native Export → CTMS [DEV] → Cloud ALM Approval → CTMS [QAS] → Cloud ALM Approval → CTMS [PROD]
+
 
 ## 7.4 Deployment Roles & Authorization Matrix
 This section defines who can perform which deployment activities across the landscape. Strict segregation of duties (SoD) is enforced: the person who develops/uploads cannot approve, and the person who approves cannot import.
@@ -466,15 +404,6 @@ This section defines who can perform which deployment activities across the land
 | Import to QAS | Execute the transport import into the QAS subaccount. Triggered automatically after Cloud ALM approval, or manually by DevOps. | CTMS (automated)or DevOps Engineer | CTMS: ImportOperator role on QAS node. |
 | Approve Transport to PROD | Review and approve the transport for deployment to production in Cloud ALM. Requires successful QAS testing sign-off. | Release Manager / CAB | Cloud ALM: Deployment Manager or Change Approver role.Must NOT be the developer or QAS approver. |
 | Import to PROD | Execute the transport import into the PROD subaccount. Triggered after Cloud ALM production approval. | CTMS (automated)or Platform Admin | CTMS: ImportOperator role on PROD node. |
-
-### 7.4.2 S/4HANA PCE Deployments (via CTS / gCTS + Cloud ALM)
-| Activity | Description | Responsible Role | Tool / Permission |
-| --- | --- | --- | --- |
-| Create & Release Transport | Developer creates ABAP objects in BAS/ADT, which generates a transport request on S/4HANA DEV. Developer releases the transport after CI/CD passes. | ABAP Developer | S/4HANA DEV: S_TRANSPRT authorization object with ACTVT 01/02 (create/change).gCTS: Git push permission on Azure DevOps. |
-| Approve Transport to QAS | Review and approve the transport for import into S/4HANA QAS. Done in Cloud ALM deployment management. | QA Lead / Test Manager | Cloud ALM: Deployment Manager role.Must NOT be the developer. |
-| Import to QAS | Execute the transport import into S/4HANA QAS. Triggered by CTMS/Cloud ALM after approval, or manually by Basis admin. | Basis Administratoror CTMS (automated via CTS) | S/4HANA QAS: S_TRANSPRT ACTVT 43 (import).Transaction STMS. |
-| Approve Transport to PROD | Review and approve for production import. Requires QAS sign-off. | Release Manager / CAB | Cloud ALM: Deployment Manager role.Must NOT be the developer. |
-| Import to PROD | Execute the transport import into S/4HANA PROD. | Basis Administratoror CTMS (automated via CTS) | S/4HANA PROD: S_TRANSPRT ACTVT 43 (import).Transaction STMS. |
 
 ### 7.4.3 Segregation of Duties Summary
 Key SoD Rules:
@@ -501,10 +430,10 @@ CIS is the identity backbone of the BTP landscape, providing:
 | Multi-Factor Authentication (MFA) | MFA enforced for all administrative access (BTP cockpit, CTMS admin, Cloud ALM admin) and production deployments. |
 | Role-Based Access Control (RBAC) | BTP role collections mapped to CIS groups. Principle of least privilege enforced per subaccount. Developers cannot deploy directly to QAS/PROD. |
 | User Provisioning | IPS automates user lifecycle (joiner/mover/leaver) across BTP subaccounts. Deprovisioning is triggered by HR events via corporate IdP. |
-| Service-to-Service Auth | OAuth 2.0 client credentials flow for CI/CD pipelines accessing BTP APIs (CTMS upload, Cloud ALM status update). Service keys stored in Azure DevOps secure variables. |
+| Service-to-Service Auth | OAuth 2.0 client credentials flow for SAP BTP CI/CD pipelines accessing BTP APIs (CTMS upload, Cloud ALM status update). Service keys stored in SAP BTP Destination service or SAP Credential Store. |
 
 ## 8.2 Secrets & Credential Management
-Azure DevOps: All service keys, API tokens, and credentials are stored in Azure DevOps Variable Groups (linked to Azure Key Vault where possible). Never committed to Git.
+SAP BTP CI/CD Service: All service keys, API tokens, and credentials are stored in SAP BTP Destination service or SAP Credential Store. Pipeline jobs reference these by name. Never committed to Git.
 BTP: Credentials stored in SAP Credential Store or BTP Destination service. Integration flows must externalize all credentials (no hardcoded values).
 Pre-commit hooks: detect-secrets or Azure DevOps Credential Scanner runs on every commit to prevent accidental credential exposure.
 ## 8.3 Static Application Security Testing (SAST)
@@ -667,8 +596,8 @@ SIEM Monitoring: All deployment and security events forwarded to SIEM. Correlati
 
 ![Reference Architecture Detail](images/reference-architecture-2.png)
 
-## C. Pipeline YAML Template (Azure DevOps)
-[Insert reference Azure DevOps YAML pipeline template for SAP Fiori MTAR build, including SAST and SCA stages.]
+## C. Pipeline YAML Template (SAP BTP CI/CD)
+[Insert reference SAP BTP CI/CD service pipeline configuration for SAP Fiori MTAR build and MDK validation, including SAST and SCA stages.]
 ## D. CTMS Configuration Reference
 [Insert CTMS node and route configuration details specific to the customer landscape.]
 ## E. SIEM Configuration Reference
